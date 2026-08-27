@@ -1,0 +1,5 @@
+# Config mínima para `supabase` CLI. Ajuste project_id ao vincular (`supabase link`).
+project_id = "quiz-eap"
+
+[functions.submit-quiz]
+verify_jwt = false
