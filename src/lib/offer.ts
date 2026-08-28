@@ -4,7 +4,7 @@ export const EVENT_POST_DATE = new Date('2026-09-13T00:00:00-03:00');
 const LIVE_EAP_URL =
   (import.meta.env.VITE_EAP_URL as string | undefined) ??
   (import.meta.env.DEV
-    ? 'http://localhost:5174/eap/#quiz-67'
+    ? 'http://localhost:5174/eap#quiz-67'
     : 'https://www.missaoconsciencia.com.br/eap#quiz-67');
 
 const POST_EVENT_CHECKOUT = 'https://pay.hotmart.com/G107328971N?off=v3x36p1y';
@@ -26,6 +26,9 @@ export type QuizOffer = {
 
 function readPreview(): boolean | null {
   if (typeof window === 'undefined') return null;
+  const hash = window.location.hash.replace(/^#/, '');
+  if (hash === 'evento-passado') return true;
+  if (hash === 'evento-ao-vivo') return false;
   const value = new URLSearchParams(window.location.search).get('evento');
   if (value === 'passado') return true;
   if (value === 'ao-vivo') return false;
