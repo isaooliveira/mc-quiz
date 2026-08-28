@@ -1,11 +1,10 @@
 /** Virada pós-evento: 13/set/2026 00:00 BRT — logo após o dia 12 de setembro. */
 export const EVENT_POST_DATE = new Date('2026-09-13T00:00:00-03:00');
 
-const LIVE_EAP_URL =
-  (import.meta.env.VITE_EAP_URL as string | undefined) ??
-  (import.meta.env.DEV
-    ? 'http://localhost:5174/eap#quiz-67'
-    : 'https://www.missaoconsciencia.com.br/eap#quiz-67');
+const LIVE_EAP_URL = import.meta.env.DEV
+  ? ((import.meta.env.VITE_EAP_URL as string | undefined) ??
+    'http://localhost:5174/eap#quiz-67')
+  : 'https://www.missaoconsciencia.com.br/eap/quiz-67';
 
 const POST_EVENT_CHECKOUT = 'https://pay.hotmart.com/G107328971N?off=v3x36p1y';
 
