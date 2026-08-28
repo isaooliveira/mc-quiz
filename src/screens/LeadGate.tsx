@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useQuiz } from '../state/QuizContext';
-import { isValidPhoneBR, maskPhoneBR } from '../lib/phone';
+import { PhoneField } from '../components/PhoneField';
+import { isValidPhone } from '../lib/phone';
 import { submitQuiz, type SubmitResult } from '../lib/submit';
 import { track } from '../lib/analytics';
+import { setNavDir } from '../lib/nav';
 
 const PRIVACY_URL = '#'; // TODO: URL da Política de Privacidade da Missão Consciência
 
@@ -32,7 +34,7 @@ export function LeadGate() {
     const e: Errors = {};
     if (name.trim().length < 2) e.name = 'Digite seu nome.';
     if (!EMAIL_RE.test(email.trim())) e.email = 'Digite um e-mail válido.';
-    if (!isValidPhoneBR(phone)) e.phone = 'Digite um WhatsApp válido com DDD.';
+    if (!isValidPhone(phone)) e.phone = 'Digite um WhatsApp válido.';
     if (!consent) e.consent = 'Você precisa concordar para continuar.';
     return e;
   }
@@ -67,7 +69,8 @@ export function LeadGate() {
         already_exists: res.alreadyExists,
       });
       markSubmitted({ code: res.result_code, type: res.result_type }, res.alreadyExists);
-      navigate('/resultado', { replace: true });
+      setNavDir('fwd');
+      navigate('/resultado', { replace: true, viewTransition: true });
       return;
     }
 
@@ -107,14 +110,11 @@ export function LeadGate() {
 
         <div className={`field ${errors.phone ? 'has-error' : ''}`}>
           <label htmlFor="phone">WhatsApp</label>
-          <input
+          <PhoneField
             id="phone"
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            placeholder="(11) 99999-8888"
             value={phone}
-            onChange={(e) => setPhone(maskPhoneBR(e.target.value))}
+            onChange={setPhone}
+            invalid={Boolean(errors.phone)}
           />
           {errors.phone && <p className="err">{errors.phone}</p>}
         </div>
@@ -145,13 +145,11 @@ export function LeadGate() {
         <label className="consent">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           <span>
-            Autorizo a Missão Consciência a armazenar meus dados e entrar em contato por e-mail e
-            WhatsApp sobre o Efeito Alta Permissão e conteúdos relacionados. Posso pedir a remoção a
-            qualquer momento. Concordo com a{' '}
+            Aceito a{' '}
             <a href={PRIVACY_URL} target="_blank" rel="noreferrer">
               Política de Privacidade
-            </a>
-            .
+            </a>{' '}
+            e autorizo a Missão Consciência a enviar conteúdos por e-mail e WhatsApp.
           </span>
         </label>
         {errors.consent && <p className="err">{errors.consent}</p>}

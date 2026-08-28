@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { QUESTIONS } from '../data/questions';
@@ -6,6 +6,10 @@ import { TOTAL_QUESTIONS } from '../data/answerKey';
 import type { OptionId } from '../data/scoring';
 import { useQuiz } from '../state/QuizContext';
 import { track } from '../lib/analytics';
+import { setNavDir } from '../lib/nav';
+
+// Respiro entre marcar a resposta e a tela avançar sozinha.
+const ADVANCE_DELAY = 250;
 
 export function Question() {
   const { n } = useParams();
@@ -15,9 +19,19 @@ export function Question() {
   const num = Number(n);
   const valid = Number.isInteger(num) && num >= 1 && num <= TOTAL_QUESTIONS;
 
+  const advanceTimer = useRef<number | null>(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [num]);
+
+  // Limpa o timer de auto-avanço se a tela sair antes da hora.
+  useEffect(
+    () => () => {
+      if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
+    },
+    [],
+  );
 
   if (submitted) return <Navigate to="/resultado" replace />;
   if (!valid) return <Navigate to="/" replace />;
@@ -34,23 +48,32 @@ export function Question() {
   function choose(option: OptionId) {
     setAnswer(num, option);
     track('quiz_question_answered', { question_number: num });
+
+    // Auto-avanço com respiro: a resposta confirma, espera 250ms, a tela desliza.
+    // Trocar de opção dentro da janela reinicia a contagem.
+    if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
+    advanceTimer.current = window.setTimeout(() => {
+      setNavDir('fwd');
+      if (isLast) {
+        track('quiz_completed');
+        navigate('/dados', { viewTransition: true });
+      } else {
+        navigate(`/pergunta/${num + 1}`, { viewTransition: true });
+      }
+    }, ADVANCE_DELAY);
   }
 
-  function next() {
-    if (!selected) return;
-    if (isLast) {
-      track('quiz_completed');
-      navigate('/dados');
-    } else {
-      navigate(`/pergunta/${num + 1}`);
-    }
+  function goBack() {
+    if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
+    setNavDir('back');
+    navigate(`/pergunta/${num - 1}`, { viewTransition: true });
   }
 
   return (
     <Layout>
       <div className="screen">
         <div className="progress" aria-hidden="true">
-          <span style={{ width: `${(num / TOTAL_QUESTIONS) * 100}%` }} />
+          <span style={{ transform: `scaleX(${num / TOTAL_QUESTIONS})` }} />
         </div>
         <p className="eyebrow">
           Pergunta {num} de {TOTAL_QUESTIONS}
@@ -87,16 +110,13 @@ export function Question() {
           ))}
         </ul>
 
-        <div className="btn-row">
-          {num > 1 && (
-            <button className="btn btn-ghost" onClick={() => navigate(`/pergunta/${num - 1}`)}>
+        {num > 1 && (
+          <div className="btn-row">
+            <button className="btn btn-ghost" onClick={goBack}>
               Voltar
             </button>
-          )}
-          <button className="btn btn-primary" disabled={!selected} onClick={next}>
-            {isLast ? 'Ver resultado' : 'Próxima'}
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -57,13 +57,38 @@ function json(body: unknown, status = 200) {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function normalizePhone(raw: string): { e164: string; digits: string } | null {
-  let d = (raw || "").replace(/\D/g, "");
-  if (d.startsWith("55") && (d.length === 12 || d.length === 13)) d = d.slice(2);
-  if (d.length !== 10 && d.length !== 11) return null;
-  const ddd = Number(d.slice(0, 2));
-  if (ddd < 11 || ddd > 99) return null;
-  if (d.length === 11 && d[2] !== "9") return null;
-  return { e164: "+55" + d, digits: d };
+  const s = (raw || "").trim();
+  if (!s) return null;
+
+  let digits = s.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("00")) digits = digits.slice(2);
+
+  // Nacional BR legado (sem +55): 10 ou 11 dígitos.
+  const looksNationalBR =
+    !s.startsWith("+") &&
+    (digits.length === 10 || digits.length === 11) &&
+    !digits.startsWith("55");
+  if (looksNationalBR) {
+    const ddd = Number(digits.slice(0, 2));
+    if (ddd < 11 || ddd > 99) return null;
+    if (digits.length === 11 && digits[2] !== "9") return null;
+    return { e164: "+55" + digits, digits: "55" + digits };
+  }
+
+  // E.164: 8–15 dígitos, sem zero à esquerda.
+  if (digits.length < 8 || digits.length > 15) return null;
+  if (digits[0] === "0") return null;
+
+  if (digits.startsWith("55")) {
+    const national = digits.slice(2);
+    if (national.length !== 10 && national.length !== 11) return null;
+    const ddd = Number(national.slice(0, 2));
+    if (ddd < 11 || ddd > 99) return null;
+    if (national.length === 11 && national[2] !== "9") return null;
+  }
+
+  return { e164: "+" + digits, digits };
 }
 
 async function sha256Hex(input: string): Promise<string> {

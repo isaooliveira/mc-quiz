@@ -3,6 +3,7 @@ import { Layout } from '../components/Layout';
 import { INTRO_PARAGRAPH } from '../data/questions';
 import { useQuiz } from '../state/QuizContext';
 import { track } from '../lib/analytics';
+import { setNavDir } from '../lib/nav';
 
 export function Intro() {
   const navigate = useNavigate();
@@ -10,12 +11,13 @@ export function Intro() {
 
   function start() {
     track('quiz_start');
+    setNavDir('fwd');
     if (submitted) {
       reset();
-      navigate('/pergunta/1');
+      navigate('/pergunta/1', { viewTransition: true });
       return;
     }
-    navigate(`/pergunta/${answeredCount > 0 ? firstUnanswered : 1}`);
+    navigate(`/pergunta/${answeredCount > 0 ? firstUnanswered : 1}`, { viewTransition: true });
   }
 
   const resuming = !submitted && answeredCount > 0;
@@ -26,7 +28,9 @@ export function Intro() {
         <p className="eyebrow">Teste · 10 situações</p>
         <h1>Como você lê um caso?</h1>
         <p>{INTRO_PARAGRAPH}</p>
-        <p className="meta">Leva cerca de 2 minutos. Não tem resposta certa.</p>
+        <aside className="time-card">
+          O teste leva em média 3 minutos · Não tem resposta certa.
+        </aside>
         <button className="btn btn-primary btn-block" onClick={start}>
           {resuming ? 'Continuar' : 'Começar'}
         </button>

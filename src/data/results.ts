@@ -1,4 +1,4 @@
-import type { ResultCode, ResultType } from './scoring';
+import type { ResultCode, ResultType, Tag } from './scoring';
 
 export type Result = {
   code: ResultCode;
@@ -10,6 +10,47 @@ export type Result = {
 };
 
 export const EYEBROW = 'Seu jeito de ler um caso tende mais para:';
+
+export const PATTERN_LABELS: Record<Tag, string> = {
+  FP: 'Fechamento Precoce',
+  VC: 'Viés de Confirmação',
+  TE: 'Teoria como Evidência',
+  LI: 'Leitura Investigativa',
+};
+
+export function tagsFor(code: ResultCode): Tag[] {
+  if (code === 'LI_ALL') return ['LI'];
+  return code.split('_').filter((part): part is Tag => part in PATTERN_LABELS);
+}
+
+const NEXT_STEP_RE = /^\*\*(Seu próximo passo|Agora, o seu próximo nível)/;
+
+export type NextStep = { label: string; text: string };
+
+function parseNextStep(raw: string): NextStep {
+  const rules: Array<{ re: RegExp; label: string }> = [
+    { re: /^\*\*Seu próximo passo:\*\*\s*/, label: 'Próximo passo' },
+    { re: /^\*\*Seu próximo passo\*\* é este:\s*/, label: 'Próximo passo' },
+    { re: /^\*\*Seu próximo passo\*\* é\s*/, label: 'Próximo passo' },
+    { re: /^\*\*Agora, o seu próximo nível é\s*/, label: 'Próximo nível' },
+  ];
+  for (const { re, label } of rules) {
+    if (re.test(raw)) {
+      let text = raw.replace(re, '').replace(/\*\*$/, '').trim();
+      text = text.charAt(0).toUpperCase() + text.slice(1);
+      return { label, text };
+    }
+  }
+  return { label: 'Próximo passo', text: raw };
+}
+
+export function splitResultBody(body: string[]): { reading: string[]; nextStep: NextStep | null } {
+  const last = body[body.length - 1];
+  if (last && NEXT_STEP_RE.test(last)) {
+    return { reading: body.slice(0, -1), nextStep: parseNextStep(last) };
+  }
+  return { reading: body, nextStep: null };
+}
 
 export const RESULTS: Record<ResultCode, Result> = {
   FP: {

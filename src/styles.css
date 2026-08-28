@@ -12,6 +12,8 @@
 
   --accent-lime: #d1ff03;
   --accent-red: #e90000;
+  /* vermelho de borda; para texto de erro usa o tom claro (contraste AA no #202020) */
+  --accent-red-text: #ff6b6b;
   --accent-brown: #9a6848;
 
   --line: rgba(248, 240, 223, 0.14);
@@ -67,10 +69,65 @@ button {
   border-radius: 3px;
 }
 
+::selection {
+  background: var(--accent-lime);
+  color: var(--text-on-cream);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   Transições de rota — View Transitions API
+   Deslize horizontal de 220ms. Avançar entra pela direita;
+   voltar espelha. Sob reduced-motion, corte seco.
+   ============================================================ */
+@keyframes vt-in-fwd {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes vt-out-fwd {
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes vt-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes vt-out-back {
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+::view-transition-old(root) {
+  animation: vt-out-fwd 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+::view-transition-new(root) {
+  animation: vt-in-fwd 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+html.nav-back::view-transition-old(root) {
+  animation-name: vt-out-back;
+}
+html.nav-back::view-transition-new(root) {
+  animation-name: vt-in-back;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
   }
 }
 
@@ -81,33 +138,57 @@ button {
   width: 100%;
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 20px 22px 64px;
+  padding: 28px 22px 40px;
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.wordmark {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+.site-footer {
+  width: 100%;
+  margin-top: auto;
+  padding: 56px 22px 48px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.site-footer img {
+  display: block;
+  width: 168px;
+  height: auto;
+  margin: 0 auto 28px;
+}
+
+.site-footer p {
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--text-muted);
-  padding: 6px 0 20px;
 }
 
-.screen {
-  animation: fade 0.16s ease-out;
+.site-footer p + p {
+  margin-top: 2px;
 }
 
-@keyframes fade {
+/* Entrada em stagger — 3 passos de ~45ms. Roda "por trás" da View
+   Transition e termina junto com o deslize. Sob reduced-motion o
+   bloco global acima zera a duração. */
+.screen > * {
+  animation: screen-in 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.screen > *:nth-child(2) {
+  animation-delay: 45ms;
+}
+.screen > *:nth-child(3) {
+  animation-delay: 90ms;
+}
+.screen > *:nth-child(n + 4) {
+  animation-delay: 135ms;
+}
+
+@keyframes screen-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
+    transform: translateY(6px);
   }
 }
 
@@ -125,9 +206,13 @@ button {
 
 .progress > span {
   display: block;
+  width: 100%;
   height: 100%;
+  transform-origin: left center;
   background: var(--accent-lime);
-  transition: width 0.25s ease;
+  /* scaleX (composite-only) em vez de width; ease-out sem overshoot —
+     uma barra de progresso não deve passar do valor real. */
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .eyebrow {
@@ -189,16 +274,21 @@ button {
   color: var(--text);
   font-size: 16px;
   line-height: 1.5;
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.12s, background 0.12s,
+    transform 0.18s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .option:hover {
   background: var(--card-hover);
+  border-color: rgba(248, 240, 223, 0.28);
 }
 
+/* Confirmação de 250ms — a opção sobe 1px, o tick preenche com overshoot.
+   É o "respiro" antes do auto-avanço. */
 .option[aria-checked="true"] {
   border-color: var(--accent-lime);
   background: rgba(209, 255, 3, 0.08);
+  transform: translateY(-1px);
 }
 
 .option .tick {
@@ -211,16 +301,24 @@ button {
   position: relative;
 }
 
-.option[aria-checked="true"] .tick {
-  border-color: var(--accent-lime);
-}
-
-.option[aria-checked="true"] .tick::after {
+.option .tick::after {
   content: "";
   position: absolute;
   inset: 3px;
   border-radius: 50%;
   background: var(--accent-lime);
+  transform: scale(0);
+  /* leve overshoot no preenchimento do tick — o único momento tátil do quiz,
+     validado na thesis do genjutsu. Curva suave, não "bounce". */
+  transition: transform 0.25s cubic-bezier(0.34, 1.12, 0.64, 1);
+}
+
+.option[aria-checked="true"] .tick {
+  border-color: var(--accent-lime);
+}
+
+.option[aria-checked="true"] .tick::after {
+  transform: scale(1);
 }
 
 /* ============================================================
@@ -244,8 +342,10 @@ button {
   font-size: 15px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  text-align: center;
   text-decoration: none;
-  transition: opacity 0.12s, transform 0.05s;
+  transition: opacity 0.12s, transform 0.05s, filter 0.12s, border-color 0.12s,
+    color 0.12s;
 }
 
 .btn:active {
@@ -257,6 +357,10 @@ button {
   color: var(--text-on-cream);
   flex: 1;
   min-height: 48px;
+}
+
+.btn-primary:not([disabled]):hover {
+  filter: brightness(1.06);
 }
 
 .btn-primary[disabled] {
@@ -273,6 +377,11 @@ button {
   font-weight: 400;
   padding: 13px 18px;
   min-height: 48px;
+}
+
+.btn-ghost:not([disabled]):hover {
+  border-color: var(--text-muted);
+  color: var(--text);
 }
 
 .btn-block {
@@ -297,10 +406,19 @@ button {
   margin-bottom: 16px;
 }
 
-.intro .meta {
-  font-size: 14px;
+.time-card {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  background: rgba(248, 240, 223, 0.07);
+  border: 1px solid var(--line);
   color: var(--text-muted);
-  margin: 4px 0 28px;
+  border-radius: 999px;
+  padding: 7px 14px;
+  margin: 4px 0 26px;
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
 }
 
 /* ============================================================
@@ -335,31 +453,125 @@ button {
   margin-bottom: 6px;
 }
 
-.field input {
+.field > input {
   width: 100%;
   padding: 12px 14px;
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(248, 240, 223, 0.18);
   color: var(--text);
+  caret-color: var(--accent-lime);
   font-size: 16px;
+  transition: border-color 0.12s;
 }
 
-.field input::placeholder {
+.field > input::placeholder {
   color: rgba(248, 240, 223, 0.35);
 }
 
-.field input:focus {
+.field > input:focus {
   outline: none;
   border-color: var(--accent-lime);
 }
 
-.field.has-error input {
+.field.has-error > input {
   border-color: var(--accent-red);
 }
 
-.field .err {
-  color: var(--accent-red);
+/* WhatsApp internacional — bandeira + DDI */
+.phone-field {
+  --react-international-phone-height: 46px;
+  --react-international-phone-font-size: 16px;
+  --react-international-phone-border-radius: var(--radius);
+  --react-international-phone-border-color: rgba(248, 240, 223, 0.18);
+  --react-international-phone-background-color: rgba(255, 255, 255, 0.06);
+  --react-international-phone-text-color: var(--text);
+  --react-international-phone-selected-dropdown-item-background-color: #3a3a3a;
+  --react-international-phone-selected-dropdown-item-text-color: var(--text-strong);
+  --react-international-phone-dropdown-item-text-color: var(--text);
+  --react-international-phone-dropdown-item-dial-code-color: var(--text-muted);
+  --react-international-phone-dropdown-item-background-color: #252525;
+  --react-international-phone-country-selector-background-color: rgba(255, 255, 255, 0.06);
+  --react-international-phone-country-selector-background-color-hover: rgba(255, 255, 255, 0.1);
+  --react-international-phone-country-selector-arrow-color: var(--text-muted);
+  --react-international-phone-flag-width: 22px;
+  --react-international-phone-flag-height: 16px;
+  --react-international-phone-dropdown-top: 48px;
+  width: 100%;
+  position: relative;
+  z-index: 40;
+}
+
+.field:has(.phone-field) {
+  position: relative;
+  z-index: 40;
+}
+
+.phone-field .react-international-phone-input-container {
+  width: 100%;
+}
+
+.phone-field .react-international-phone-country-selector-button {
+  padding: 0 8px 0 10px;
+  min-width: 62px;
+}
+
+.phone-field .react-international-phone-input {
+  flex: 1;
+  min-width: 0;
+  caret-color: var(--accent-lime);
+  font-family: var(--font-sans);
+}
+
+.phone-field .react-international-phone-input::placeholder {
+  color: rgba(248, 240, 223, 0.35);
+}
+
+.phone-field .react-international-phone-input:focus,
+.phone-field .react-international-phone-country-selector-button:focus {
+  border-color: var(--accent-lime);
+}
+
+.phone-field.has-error .react-international-phone-input,
+.phone-field.has-error .react-international-phone-country-selector-button {
+  border-color: var(--accent-red);
+}
+
+.phone-field .react-international-phone-country-selector {
+  position: static;
+}
+
+.phone-field .react-international-phone-country-selector-dropdown {
+  z-index: 50;
+  left: 0;
+  width: 100%;
+  max-height: 260px;
+  background: #252525;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  color: var(--text);
+}
+
+.phone-field .react-international-phone-country-selector-dropdown__list-item {
+  min-height: 36px;
+  font-family: var(--font-sans);
+  background: #252525;
+}
+
+.phone-field .react-international-phone-country-selector-dropdown__list-item:hover,
+.phone-field .react-international-phone-country-selector-dropdown__list-item--selected,
+.phone-field .react-international-phone-country-selector-dropdown__list-item--focused {
+  background: #3a3a3a;
+}
+
+.phone-field .react-international-phone-country-selector-dropdown__preferred-list-divider {
+  background: var(--line);
+}
+
+/* Vale dentro do .field e também para o erro do consentimento (fora de .field). */
+.err {
+  color: var(--accent-red-text);
   font-size: 13px;
   margin-top: 5px;
 }
@@ -405,51 +617,377 @@ button {
 }
 
 /* ============================================================
-   Result
+   Result — entrega em camadas (reveal → leitura → passo → convite)
+   Identidade intacta: charcoal, lima, cream, Encode + serif no punch.
    ============================================================ */
-.result .name {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--accent-lime);
-  margin: 8px 0 12px;
+@keyframes result-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
 
-.result h1 {
-  font-size: 30px;
-  line-height: 1.2;
+.screen.result > .result-reveal,
+.screen.result > .result-reading,
+.screen.result > .result-next,
+.screen.result > .result-path {
+  animation-name: result-in;
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.screen.result > .result-reveal {
+  animation-duration: 460ms;
+}
+.screen.result > .result-reading {
+  animation-delay: 140ms;
+}
+.screen.result > .result-next {
+  animation-delay: 220ms;
+}
+.screen.result > .result-path {
+  animation-delay: 260ms;
+}
+
+.result-reveal {
+  margin-bottom: 28px;
+}
+
+.result-name {
+  font-size: 28px;
+  line-height: 1.15;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   color: var(--text-strong);
-  margin-bottom: 20px;
+  margin: 10px 0 0;
 }
 
-.result .body p {
+.result-name[data-hybrid] {
+  text-wrap: pretty;
+}
+
+.result-plus {
+  color: var(--accent-lime);
+  font-weight: 700;
+  letter-spacing: 0;
+  animation: result-plus-in 320ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both;
+}
+
+@keyframes result-plus-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.result-mark {
+  display: block;
+  width: 44px;
+  height: 2px;
+  margin: 16px 0 0;
+  background: var(--accent-lime);
+  transform: scaleX(1);
+  transform-origin: left center;
+  animation: result-mark-in 400ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both;
+}
+
+@keyframes result-mark-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.result-headline {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 16px 0 0;
+  animation: result-in 380ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
+}
+
+/* Rabisco de caneta sob a frase-punch. Sem marca-texto — a tinta
+   cobria a letra e perdia contraste. Vermelho de ênfase da identidade. */
+.result-ink {
+  --ink-scribble: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 10' preserveAspectRatio='none'%3E%3Cpath fill='%23e90000' d='M0 3.1C40 1 80 6.1 120 3.4C160 0.8 200 6.2 240 3.2C280 0.4 320 6 360 3.1C400 0.2 440 5.8 480 3.2C520 0.6 560 6.2 600 3.4C640 0.7 680 5.6 720 3C752 1.2 780 5 800 3.2v4.2c-28 1.8-60-2.2-88 0.4-40 2.4-80-2.6-120-0.2-40 2.4-80-2.4-120 0-40 2.4-80-2.6-120-0.2-40 2.4-80-2.2-120 0.2-40 2.4-80-2.6-120-0.2C32 8.8 12 5.2 0 7.3z'/%3E%3C/svg%3E");
+  color: inherit;
+  background-color: transparent;
+  background-image: var(--ink-scribble);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 0.32em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0.02em 0.12em 0.14em;
+  animation: ink-paint 560ms cubic-bezier(0.2, 0.85, 0.25, 1) 420ms both;
+}
+
+@keyframes ink-paint {
+  from {
+    background-size: 0% 0.32em;
+  }
+  to {
+    background-size: 100% 0.32em;
+  }
+}
+
+.result-reading p {
   margin-bottom: 14px;
   font-size: 17px;
 }
 
-.result .body strong {
+.result-reading p:last-child {
+  margin-bottom: 0;
+}
+
+.result-reading strong,
+.result-next strong {
   color: var(--text-strong);
   font-weight: 700;
 }
 
-.result .eap {
-  background: var(--surface-cream);
-  color: var(--text-on-cream);
-  padding: 20px;
-  border-radius: var(--radius-lg);
-  margin: 24px 0;
+.result-next {
+  margin-top: 22px;
+  padding: 16px 18px 16px 16px;
+  border-left: 2px solid var(--accent-lime);
+  background: rgba(209, 255, 3, 0.06);
+  border-radius: 0 var(--radius) var(--radius) 0;
   font-size: 16px;
   line-height: 1.55;
 }
 
-.result .redo {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 18px;
+.result-next-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent-lime);
+  margin-bottom: 8px;
+}
+
+.result-path {
+  margin-top: 28px;
+}
+
+.result-steps {
+  list-style: none;
+  margin: 0;
+  padding: 36px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.result-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  position: relative;
+  min-width: 0;
+}
+
+.result-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: calc(50% + 18px);
+  width: calc(100% - 36px);
+  height: 2px;
+  background: var(--line);
+  z-index: 0;
+}
+
+.result-step.is-done:not(:last-child)::before {
+  background: linear-gradient(
+    90deg,
+    var(--accent-lime) 0%,
+    rgba(209, 255, 3, 0.28) 100%
+  );
+}
+
+/* Pulso que corre do 1 ao 2 — puxa o olhar até "você está aqui". */
+.result-step.is-done:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: calc(50% + 18px);
+  width: calc(100% - 36px);
+  height: 2px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 42%,
+    var(--accent-lime) 49%,
+    #fff 51%,
+    var(--accent-lime) 53%,
+    transparent 60%,
+    transparent 100%
+  );
+  animation: step-flow 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes step-flow {
+  0% {
+    transform: translateX(-50%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  78% {
+    transform: translateX(50%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(50%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-step.is-done:not(:last-child)::after {
+    animation: none !important;
+    opacity: 0;
+  }
+}
+
+.result-step-here {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-lime);
+  color: var(--text-on-cream);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 5px 8px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+.result-step-here::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--accent-lime);
+}
+
+.result-step-index {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  flex: none;
+  border: 1.5px solid var(--line);
+  color: var(--text-muted);
+  background: var(--bg);
+}
+
+.result-step.is-done .result-step-index {
+  border-color: var(--accent-lime);
+  background: var(--accent-lime);
+  color: var(--text-on-cream);
+}
+
+.result-step.is-now .result-step-index {
+  border-color: var(--surface-cream);
+  background: var(--surface-cream);
+  color: var(--text-on-cream);
+}
+
+.result-step-title {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-strong);
+  line-height: 1.25;
+}
+
+.result-step.is-next .result-step-title {
+  color: var(--text-muted);
+}
+
+.result-step-hint {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.result-step.is-next .result-step-hint {
+  color: rgba(248, 240, 223, 0.38);
+}
+
+.result-step-panel {
+  margin-top: 22px;
+  background: var(--surface-cream);
+  color: var(--text-on-cream);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.result-step-panel .eap {
+  padding: 20px 18px 4px;
+  font-size: 20px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.result-offer-art {
+  display: block;
+  width: calc(100% - 36px);
+  height: auto;
+  margin: 16px 18px 0;
+  border-radius: var(--radius);
+}
+
+.result-offer {
+  margin: 16px 18px 0;
+  font-size: 15px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.result-offer p + p:not(.result-offer-price) {
+  margin-top: 8px;
+}
+
+.result-offer-price {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--accent-red);
+  line-height: 1.1;
+  margin: 6px 0 10px;
+}
+
+.result-step-panel .btn-primary {
+  width: calc(100% - 36px);
+  margin: 12px 18px 18px;
+  white-space: normal;
+  line-height: 1.3;
+  text-wrap: balance;
 }
 
 .notice {
@@ -459,7 +997,7 @@ button {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 10px 12px;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .center {
@@ -478,8 +1016,11 @@ button {
   .intro h1 {
     font-size: 34px;
   }
-  .result h1 {
-    font-size: 34px;
+  .result-name {
+    font-size: 36px;
+  }
+  .result-headline {
+    font-size: 26px;
   }
   .scenario p,
   .scenario .quote {

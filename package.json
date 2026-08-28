@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "libphonenumber-js": "^1.13.12",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-international-phone": "^4.8.0",
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
@@ -19,6 +21,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "typescript": "^5.5.4",
+    "uipro-cli": "^2.2.3",
     "vite": "^5.4.6"
   }
 }

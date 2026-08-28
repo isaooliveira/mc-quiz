@@ -12,3 +12,4 @@ supabase/.temp
 
 # repositório git aninhado acidental
 Sem Título/
+.env*
