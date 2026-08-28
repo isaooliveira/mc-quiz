@@ -1,7 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/quiz/assets/(.*)", "destination": "/assets/$1" },
-    { "source": "/quiz(/.*)?", "destination": "/index.html" }
+    { "source": "/quiz/assets/:path*", "destination": "/assets/:path*" },
+    {
+      "source": "/quiz/:file(.*\\.(?:js|css|webp|png|svg|jpg|jpeg|gif|ico|woff2|woff|ttf|map))",
+      "destination": "/:file"
+    },
+    { "source": "/quiz", "destination": "/index.html" },
+    { "source": "/quiz/", "destination": "/index.html" },
+    { "source": "/quiz/:path*", "destination": "/index.html" }
   ]
 }

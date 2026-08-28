@@ -21,10 +21,6 @@ export function Question() {
 
   const advanceTimer = useRef<number | null>(null);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [num]);
-
   // Limpa o timer de auto-avanço se a tela sair antes da hora.
   useEffect(
     () => () => {
@@ -76,7 +72,7 @@ export function Question() {
           <span style={{ transform: `scaleX(${num / TOTAL_QUESTIONS})` }} />
         </div>
         <p className="eyebrow">
-          Pergunta {num} de {TOTAL_QUESTIONS}
+          Situação {num} de {TOTAL_QUESTIONS}
         </p>
 
         <div className="scenario">

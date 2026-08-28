@@ -3,20 +3,25 @@ export const EVENT_POST_DATE = new Date('2026-09-13T00:00:00-03:00');
 
 const LIVE_EAP_URL = import.meta.env.DEV
   ? ((import.meta.env.VITE_EAP_URL as string | undefined) ??
-    'http://localhost:5174/eap#quiz-67')
-  : 'https://www.missaoconsciencia.com.br/eap/quiz-67';
+    'http://localhost:5174/eap/#quiz-127')
+  : 'https://www.missaoconsciencia.com.br/eap#quiz-127';
 
-const POST_EVENT_CHECKOUT = 'https://pay.hotmart.com/G107328971N?off=v3x36p1y';
+/** Depois do dia 12 o quiz cai na landing pós-evento, não no checkout. */
+const POST_EVENT_EAP_URL = import.meta.env.DEV
+  ? 'http://localhost:5174/eap/?evento=passado'
+  : 'https://www.missaoconsciencia.com.br/eap';
 
 export type QuizOffer = {
   mode: 'live' | 'immediate';
   price: number;
   priceLabel: string;
+  compareLabel: string | null;
   image: string;
   imageAlt: string;
   href: string;
   cta: string;
   stepTitle: string;
+  stepNextTitle: string;
   kicker: string;
   body: string;
   foot: string | null;
@@ -48,12 +53,14 @@ export function getQuizOffer(now = new Date()): QuizOffer {
       mode: 'immediate',
       price: 127,
       priceLabel: 'R$127',
+      compareLabel: 'R$197',
       image: `${base}bg-quiz-imediato.webp`,
       imageAlt: 'Efeito Alta Permissão, acesso imediato',
-      href: POST_EVENT_CHECKOUT,
+      href: POST_EVENT_EAP_URL,
       cta: 'Garantir meu acesso por R$127',
-      stepTitle: 'Acesso',
-      kicker: 'O treinamento está disponível por',
+      stepTitle: 'Garantir acesso',
+      stepNextTitle: 'Acesso Imediato',
+      kicker: 'O treinamento está disponível',
       body: 'Acesso imediato ao conteúdo completo.',
       foot: null,
       trackOffer: '127',
@@ -62,16 +69,18 @@ export function getQuizOffer(now = new Date()): QuizOffer {
 
   return {
     mode: 'live',
-    price: 67,
-    priceLabel: 'R$67',
+    price: 127,
+    priceLabel: 'R$127',
+    compareLabel: 'R$197',
     image: `${base}bg-quiz.webp`,
     imageAlt: 'Efeito Alta Permissão, ao vivo em 12 de setembro às 9h',
     href: LIVE_EAP_URL,
-    cta: 'Garantir meu ingresso por R$67',
-    stepTitle: 'Ingresso',
-    kicker: 'Liberei poucos ingressos a',
-    body: 'Esse é o menor valor para garantir um lugar no treinamento. Mas só vale neste botão abaixo, nesta tela.',
+    cta: 'Garantir meu ingresso VIP por R$127',
+    stepTitle: 'Garantir Ingresso',
+    stepNextTitle: 'Participar ao vivo',
+    kicker: 'Liberei alguns poucos Ingressos VIP pelo valor promocional',
+    body: 'Esse valor só vale neste botão, nesta tela.',
     foot: 'Amanhã ou quando acabarem os ingressos já não vale mais.',
-    trackOffer: '67',
+    trackOffer: 'vip127',
   };
 }

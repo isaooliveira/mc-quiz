@@ -1,7 +1,8 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { RichText } from '../components/RichText';
+import { ScrollHint } from '../components/ScrollHint';
 import { EYEBROW, PATTERN_LABELS, RESULTS, splitResultBody, tagsFor } from '../data/results';
 import { useQuiz } from '../state/QuizContext';
 import { track } from '../lib/analytics';
@@ -19,6 +20,7 @@ export function Result() {
   }, []);
 
   const data = result ? RESULTS[result.code] : null;
+  const offerPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (data) track('quiz_result_viewed', { result_code: data.code });
@@ -87,7 +89,11 @@ export function Result() {
                   />
                 </svg>
               </span>
-              <p className="result-step-title">Leitura</p>
+              <p className="result-step-title">
+                Leitura de
+                <br />
+                Caso
+              </p>
               <p className="result-step-hint">feita</p>
             </li>
             <li className="result-step is-now" aria-current="step">
@@ -102,12 +108,22 @@ export function Result() {
               <span className="result-step-index" aria-hidden="true">
                 3
               </span>
-              <p className="result-step-title">Treino</p>
+              <p className="result-step-title">
+                {offer.mode === 'immediate' ? (
+                  offer.stepNextTitle
+                ) : (
+                  <>
+                    Participar
+                    <br />
+                    ao vivo
+                  </>
+                )}
+              </p>
               <p className="result-step-hint">EAP</p>
             </li>
           </ol>
 
-          <div className="result-step-panel">
+          <div className="result-step-panel" ref={offerPanelRef}>
             <div className="eap">{data.eap}</div>
             <img
               className="result-offer-art"
@@ -117,8 +133,16 @@ export function Result() {
               height={461}
             />
             <aside className="result-offer">
-              <p>{offer.kicker}</p>
-              <p className="result-offer-price">{offer.priceLabel}</p>
+              <p className="result-offer-lead">{offer.kicker}</p>
+              <p className="result-offer-price">
+                {offer.compareLabel ? (
+                  <>
+                    De <s>{offer.compareLabel}</s> por {offer.priceLabel}
+                  </>
+                ) : (
+                  offer.priceLabel
+                )}
+              </p>
               <p>{offer.body}</p>
               {offer.foot && <p>{offer.foot}</p>}
             </aside>
@@ -134,6 +158,7 @@ export function Result() {
           </div>
         </section>
       </article>
+      <ScrollHint targetRef={offerPanelRef} />
     </Layout>
   );
 }
