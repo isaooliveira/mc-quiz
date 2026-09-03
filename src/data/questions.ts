@@ -9,8 +9,13 @@ export type Question = {
   options: { id: OptionId; text: string }[];
 };
 
-export const INTRO_PARAGRAPH =
-  'Não importa se você trabalha principalmente com conversa, corpo, técnicas energéticas, práticas integrativas ou uma mistura de abordagens. Aqui não estamos avaliando a técnica que você usa. Estamos olhando para o que você faz com aquilo que percebe durante um atendimento.';
+export const INTRO_PARAGRAPHS = [
+  'Não importa se você trabalha com terapia, corpo, técnicas energéticas, práticas integrativas ou uma mistura de abordagens.',
+  'Aqui, não estamos avaliando a técnica que você usa.',
+  'Estamos olhando para o que você faz com aquilo que percebe durante um atendimento.',
+  'Nas próximas 10 situações, escolha a alternativa que mais se aproxima do que você realmente faria, e não da que parece mais correta.',
+  'No final, você vai descobrir qual tendência aparece com mais frequência no seu jeito de ler um caso.',
+];
 
 export const QUESTIONS: Question[] = [
   {

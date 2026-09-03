@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { INTRO_PARAGRAPH } from '../data/questions';
+import { INTRO_PARAGRAPHS } from '../data/questions';
 import { useQuiz } from '../state/QuizContext';
 import { track } from '../lib/analytics';
 import { setNavDir } from '../lib/nav';
@@ -26,8 +26,10 @@ export function Intro() {
     <Layout>
       <div className="screen intro">
         <p className="eyebrow">Teste · 10 situações</p>
-        <h1>Como você lê um caso?</h1>
-        <p>{INTRO_PARAGRAPH}</p>
+        <h1>Antes de começar</h1>
+        {INTRO_PARAGRAPHS.map((text) => (
+          <p key={text}>{text}</p>
+        ))}
         <aside className="time-card">
           O teste leva em média 3 minutos · Não tem resposta certa.
         </aside>
